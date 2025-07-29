@@ -100,9 +100,21 @@ from datetime import datetime
 import uuid
 from typing import Optional
 import pandas as pd
+from starlette.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
+# Vercel requires this named variable
+handler = app
 # Configuration
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
