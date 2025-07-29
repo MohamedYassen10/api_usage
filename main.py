@@ -25,7 +25,6 @@ handler = app
 # Configuration
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 @app.post("/upload-file/")
 async def upload_file(file: UploadFile = File(...)):
     try:
@@ -36,13 +35,7 @@ async def upload_file(file: UploadFile = File(...)):
             "sample_data": df.head().to_dict(orient="records")
         }
     except Exception as e:
-        raise HTTPException(500, f"Error: {str(e)}")
-
-        return result
-
-    except Exception as e:
-        raise HTTPException(500, f"Error processing file: {str(e)}")
-
+        raise HTTPException(500, f"Error reading file: {str(e)}")
 
 @app.get("/download-file/{file_id}")
 async def download_file(file_id: str):
