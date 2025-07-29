@@ -7,6 +7,7 @@ import uuid
 from typing import Optional
 import pandas as pd
 from starlette.middleware.cors import CORSMiddleware
+from io import BytesIO
 
 app = FastAPI()
 app.add_middleware(
@@ -25,55 +26,17 @@ handler = app
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
 @app.post("/upload-file/")
-async def upload_file(
-        file: UploadFile = File(...),
-        process_data: Optional[bool] = False
-):
+async def upload_file(file: UploadFile = File(...)):
     try:
-        # Generate unique file ID
-        file_id = str(uuid.uuid4())
-        file_ext = os.path.splitext(file.filename)[1].lower()  # Ensure lowercase extension
-        saved_filename = f"{file_id}{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, saved_filename)
-
-        # Save file
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
-
-        # Initialize result
-        result = {
-            "status": "success",
-            "file_id": file_id,
-            "filename": file.filename,
-            "saved_path": file_path,
-            "file_type": file.content_type,
-            "metadata": {}
+        content = await file.read()
+        df = pd.read_excel(BytesIO(content), engine="openpyxl")
+        return {
+            "columns": list(df.columns),
+            "sample_data": df.head().to_dict(orient="records")
         }
-
-        if process_data:
-            try:
-                # Ensure content type is set
-                content_type = file.content_type or (
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    if file.filename.lower().endswith('.xlsx')
-                    else None
-                )
-
-                if content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                    df = pd.read_excel(file_path, engine='openpyxl')
-                    result["metadata"] = {
-                        "columns": list(df.columns),
-                        "sample_data": df.head().to_dict(orient="records"),
-                        "row_count": len(df)
-                    }
-                else:
-                    result["metadata"]["error"] = f"Unsupported file type: {content_type or 'unknown'}"
-
-            except Exception as e:
-                result["metadata"]["error"] = f"Processing failed: {str(e)}"
-
+    except Exception as e:
+        raise HTTPException(500, f"Error: {str(e)}")
 
         return result
 
