@@ -1,3 +1,5 @@
 fastapi
 uvicorn
-python-multipart  # (Add if you handle file uploads)
+python-multipart
+pandas
+openpyxl
